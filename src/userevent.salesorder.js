@@ -132,6 +132,7 @@ function lpcloverPostJob ( event )
             'ref_number' : _job.getFieldValue('tranid'),
             'order_number' : _job.getFieldValue('otherrefnum'),
             'record' : _job,
+            'job': _job,
             'customer' : nlapiLoadRecord('customer', _job.getFieldValue('entity')),
             'jobdocs' : lpcloverGetJobDocs( _job )
         };
