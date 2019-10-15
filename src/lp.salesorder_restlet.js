@@ -58,45 +58,51 @@ function lpf_ReceiveApprovalResponse( approval )
 {
     nlapiLogExecution('DEBUG', 'Approval Response', JSON.stringify(approval));
     var job = null;
+    var response = {
+        'status': null,
+        'message': null
+    };
 
-    if ( approval.hasOwnProperty('job') ) {
-        job = nlapiLoadRecord('salesorder', approval.job.id );
-    }
+    if ( approval.hasOwnProperty('job') && approval.job.hasOwnProperty('id') ) {
+        try {
+            job = nlapiLoadRecord('salesorder', approval.job.id );
 
-    if (job) {
-        nlapiLogExecution('DEBUG', 'Job', JSON.stringify(job));
+            nlapiLogExecution('DEBUG', 'Job', JSON.stringify(job));
 
-        if (approval.hasOwnProperty('revision') && Array.isArray(approval.revision) && approval.revision.length == 0) {
+            if (approval.hasOwnProperty('revision') && approval.revision === false) {
 
-            job.setFieldValue('custbody_lp_status_approval_request', 1);
-            if (job.getFieldValue('orderstatus') == 'A') {
-                job.setFieldValue('orderstatus', 'B');
+                job.setFieldValue('custbody_lp_status_approval_request', 1);
+
+            } else if (approval.hasOwnProperty('revision') && approval.revision) {
+
+                job.setFieldValue('custbody_lp_status_approval_request', 2);
+
+                var task = nlapiCreateRecord('task');
+                task.setFieldValue('company', job.getFieldValue('entity'));
+                task.setFieldValue('transaction', job.getId());
+                task.setFieldValue('title', 'Revision Request for Job ' + job.getFieldValue('tranid'));
+                task.setFieldValue('custevent_lp_type_task', '1');
+                task.setFieldValue('message', approval.revision);
+                nlapiSubmitRecord(task);
             }
 
-        } else if (approval.hasOwnProperty('revision') && !Array.isArray(approval.revision)) {
+            // Assumes if we've made it this far then Payment has been submitted
+            if (job.getFieldValue('custbody_lp_status_payment') == '5') {
+                job.setFieldValue('custbody_lp_status_payment', '3');
+            }
 
-            job.setFieldValue('custbody_lp_status_approval_request', 2);
-            //job.setFieldValue('orderstatus', 'A');
+            nlapiSubmitRecord(job);
+            response.status = 'success';
+            response.message = 'Job Review Response was successfully received by NetSuite.';
 
-            var task = nlapiCreateRecord('task');
-            task.setFieldValue('company', job.getFieldValue('entity'));
-            task.setFieldValue('transaction', job.getId());
-            task.setFieldValue('title', 'Revision Request for Job ' + job.getFieldValue('tranid'));
-            task.setFieldValue('custevent_lp_type_task', '1');
-
-            var message = approval.revision;
-
-            task.setFieldValue('message', message);
-
-            nlapiSubmitRecord(task);
+        } catch (e) {
+            response.status = 'error';
+            response.message = 'The submitted Job ID could not be found in NetSuite.';
         }
-
-        if (job.getFieldValue('custbody_lp_status_payment') == '5') {
-            job.setFieldValue('custbody_lp_status_payment', '3');
-        }
-
-        nlapiSubmitRecord(job);
+    } else {
+        response.status = 'error';
+        response.message = 'The Job Review data is missing critical data.';
     }
 
-    return job;
+    return response;
 }

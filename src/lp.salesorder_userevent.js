@@ -551,6 +551,7 @@ function lpSubmitRevisionRequest (event) {
                 'ref_number': job.getFieldValue('tranid'),
                 'order_number': job.getFieldValue('otherrefnum'),
                 'record': job,
+                'job': job,
                 'customer': customer,
                 'jobdocs': lpGetJobDocs(job)
             };
@@ -583,6 +584,7 @@ function lpSendRevisedApprovalRequest (event) {
                 'ref_number': job.getFieldValue('tranid'),
                 'order_number': job.getFieldValue('otherrefnum'),
                 'record': job,
+                'job': job,
                 'customer': customer
             };
 
@@ -619,6 +621,7 @@ function lpSendReminderApprovalRequest (event) {
                 'ref_number': job.getFieldValue('tranid'),
                 'order_number': job.getFieldValue('otherrefnum'),
                 'record': job,
+                'job': job,
                 'customer': customer
             };
 
